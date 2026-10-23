@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>종목 | 시장노트</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="stock">
+    <!-- 상단 바 -->
+    <header class="gnb">
+      <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="메뉴 열기">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+      </button>
+      <a href="index.html" class="brand">시장노트</a>
+      <nav class="gnb-menu" id="gnb-menu"></nav>
+      <div class="gnb-right">
+        <a href="stock.html#search" class="icon-btn" aria-label="종목 검색">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+        </a>
+        <button class="icon-btn" aria-label="알림">
+          <svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20.5h4" /></svg>
+        </button>
+        <a href="#" class="login-link">로그인</a>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- 상단 메뉴와 왼쪽 메뉴는 common.js가 채운다 -->
+      <aside class="sidebar" id="sidebar"></aside>
+      <div class="dim" id="dim"></div>
+
+      <main class="content">
+        <form class="stock-search" id="search-form" role="search">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+          <input id="search" type="search" list="stock-names" placeholder="종목명 또는 종목코드" autocomplete="off" />
+          <datalist id="stock-names"></datalist>
+        </form>
+
+        <section class="stock-head" id="stock-head"></section>
+
+        <section class="block">
+          <div class="block-head">
+            <div class="chart-title">
+              <h2>주가</h2>
+              <span class="sub" id="chart-cap"></span>
+            </div>
+            <div class="seg" id="range-seg">
+              <button data-range="21">1개월</button>
+              <button data-range="63" class="on">3개월</button>
+              <button data-range="126">6개월</button>
+              <button data-range="250">1년</button>
+            </div>
+          </div>
+          <div class="price-chart" id="price-chart">
+            <div id="chart"></div>
+            <div class="tip chart-tip" id="chart-tip" hidden></div>
+          </div>
+        </section>
+
+        <section class="block two-col">
+          <div>
+            <div class="block-head">
+              <h2>주요 지표</h2>
+              <span class="sub">예시 데이터</span>
+            </div>
+            <dl class="metrics" id="metrics"></dl>
+          </div>
+          <div>
+            <div class="block-head">
+              <h2>최근 5일 시세</h2>
+              <span class="sub">원 · 주</span>
+            </div>
+            <table class="flow-table" id="recent-table"></table>
+          </div>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2>관련 콘텐츠</h2>
+          </div>
+          <ul class="related" id="related"></ul>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <h2 id="peer-title">같은 업종 종목</h2>
+            <span class="sub">1일 등락률</span>
+          </div>
+          <table class="sector-table peer-table" id="peer-table"></table>
+        </section>
+
+        <footer class="footer">
+          <p>시장노트는 투자 판단에 참고할 정보를 제공하며, 투자 결과에 대한 책임은 투자자 본인에게 있습니다.</p>
+          <p>화면의 시세, 차트, 지표는 예시 데이터입니다.</p>
+        </footer>
+      </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/stock.js"></script>
+  </body>
+</html>

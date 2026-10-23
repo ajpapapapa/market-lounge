@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>라운지 | 시장노트</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body data-page="lounge">
+    <!-- 상단 바 -->
+    <header class="gnb">
+      <button class="icon-btn menu-toggle" id="menu-toggle" aria-label="메뉴 열기">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18" /></svg>
+      </button>
+      <a href="index.html" class="brand">시장노트</a>
+      <nav class="gnb-menu" id="gnb-menu"></nav>
+      <div class="gnb-right">
+        <a href="stock.html#search" class="icon-btn" aria-label="종목 검색">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg>
+        </a>
+        <button class="icon-btn" aria-label="알림">
+          <svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z" /><path d="M10 20.5h4" /></svg>
+        </button>
+        <a href="#" class="login-link">로그인</a>
+      </div>
+    </header>
+
+    <div class="layout">
+      <!-- 상단 메뉴와 왼쪽 메뉴는 common.js가 채운다 -->
+      <aside class="sidebar" id="sidebar"></aside>
+      <div class="dim" id="dim"></div>
+
+      <main class="content">
+        <div class="notice">
+          <span class="notice-tag">공지</span>
+          <a href="#">[10.22] 장마감 정리 발행 시간이 오후 4시 30분으로 바뀝니다</a>
+        </div>
+
+        <section class="block">
+          <p class="greeting">오늘 시장 한눈에 보기 <span id="today"></span></p>
+          <ul class="ticker" id="ticker"></ul>
+        </section>
+
+        <section class="block">
+          <a href="#" class="hero" id="hero"></a>
+          <ol class="article-list" id="article-list"></ol>
+        </section>
+
+        <section class="block">
+          <div class="block-head">
+            <div>
+              <h2>시황에서 언급된 종목</h2>
+              <p class="sub">오늘 콘텐츠에서 다룬 종목</p>
+            </div>
+            <div class="scroll-btns">
+              <button class="icon-btn small" data-scroll="-1" aria-label="이전">
+                <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+              </button>
+              <button class="icon-btn small" data-scroll="1" aria-label="다음">
+                <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
+              </button>
+            </div>
+          </div>
+          <div class="stock-row" id="stock-row"></div>
+        </section>
+
+        <section class="block two-col">
+          <div>
+            <div class="block-head">
+              <h2>업종별 등락</h2>
+              <a href="heatmap.html" class="more">히트맵 보기</a>
+            </div>
+            <ul class="sector-list" id="sector-list"></ul>
+          </div>
+          <div>
+            <div class="block-head">
+              <h2>투자자별 순매수</h2>
+              <span class="sub">KOSPI · 억원</span>
+            </div>
+            <table class="flow-table" id="flow-table"></table>
+          </div>
+        </section>
+
+        <footer class="footer">
+          <p>시장노트는 투자 판단에 참고할 정보를 제공하며, 투자 결과에 대한 책임은 투자자 본인에게 있습니다.</p>
+          <p>화면의 시세와 기사는 예시 데이터입니다.</p>
+        </footer>
+      </main>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/common.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>
