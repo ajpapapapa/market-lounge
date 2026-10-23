@@ -1,5 +1,6 @@
 // 종목 상세 — 데이터는 data.js의 HEATMAP(종목·업종·등락률)과 QUOTES(시세·지표)에서 가져온다
-// fmt, dir, sign, arrow, stockUrl은 common.js에 있다
+// 실제 시세가 있으면 live.js가 그 위에 덮어쓰고, 일봉도 data/history/<코드>.js를 쓴다
+// fmt, dir, sign, arrow, stockUrl은 common.js에, PRICE_NOTE, loadLiveHistory는 live.js에 있다
 
 // 모든 종목을 시장·업종 정보와 함께 펼쳐 둔다
 const ALL = Object.values(HEATMAP.markets).flatMap((m) =>
@@ -25,7 +26,7 @@ function tick(price) {
 const dateText = (d) =>
   `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
 
-// 예시용 1년치 일봉. 실제 데이터가 생기면 날짜별 종가·거래량 배열로 바꾼다
+// 실제 일봉이 없을 때 쓰는 예시용 1년치 일봉
 // 마지막 값이 현재가, 1일·1주·1개월 전 종가가 등락률과 맞도록 맞춘다
 function fakeHistory(s, length = 250) {
   let seed = Number(s.code) % 233280 || 1;
@@ -71,7 +72,7 @@ function fakeHistory(s, length = 250) {
   }));
 }
 
-const history = fakeHistory(stock);
+let history = [];
 
 // i번째 날의 등락률. 마지막 날은 라운지·히트맵과 같은 공식 등락률을 쓴다
 const changeAt = (i) =>
@@ -93,7 +94,7 @@ function renderHead() {
       <strong>${won(stock.price)}</strong><small>원</small>
       <span class="${dir(diff)}">전일 대비 ${arrow(diff)} ${won(Math.abs(diff))} (${pct(stock.change[0])})</span>
     </p>
-    <p class="stock-time">${HEATMAP.time.replaceAll("-", ".")} 기준 · 예시 데이터</p>`;
+    <p class="stock-time">${PRICE_NOTE}</p>`;
 }
 
 // x축 눈금: 짧은 기간은 주 첫 거래일, 긴 기간은 달 첫 거래일. 너무 많으면 건너뛴다
@@ -382,17 +383,24 @@ document.querySelectorAll("#range-seg button").forEach((btn, _, all) =>
   })
 );
 
-// 화면 폭이 바뀌면 차트를 다시 그린다
-let lastWidth = 0;
-new ResizeObserver(() => {
-  if (chartBox.clientWidth === lastWidth) return;
-  lastWidth = chartBox.clientWidth;
-  renderChart();
-}).observe(chartBox);
-
-renderHead();
-renderMetrics();
-renderRecent();
-renderRelated();
-renderPeers();
 setupSearch();
+
+loadLiveHistory(stock.code).then((live) => {
+  history = live
+    ? live.map(([date, close, volume]) => ({ date: new Date(`${date}T00:00:00`), close, volume }))
+    : fakeHistory(stock);
+
+  renderHead();
+  renderMetrics();
+  renderRecent();
+  renderRelated();
+  renderPeers();
+
+  // 화면 폭이 바뀌면 차트를 다시 그린다 (처음 한 번은 바로 그려진다)
+  let lastWidth = 0;
+  new ResizeObserver(() => {
+    if (chartBox.clientWidth === lastWidth) return;
+    lastWidth = chartBox.clientWidth;
+    renderChart();
+  }).observe(chartBox);
+});

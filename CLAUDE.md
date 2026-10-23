@@ -4,17 +4,26 @@
 
 ## 지금 상태
 - 1단계: 예시 데이터로 화면 만들기. 라운지(메인), 섹터 히트맵, 종목 상세 페이지 완성.
+- 2단계: 종목 시세를 실제 데이터로 연결 (공공데이터포털, 하루 늦은 종가). 지수·PER 등 나머지는 아직 예시.
 - 순수 HTML/CSS/JS (프레임워크 없음). 사용자가 직접 고른 방식.
-- 로컬 커밋만 있음(master 브랜치). GitHub 연결은 아직 안 함.
+- GitHub: https://github.com/ajpapapapa/market-lounge (main 브랜치). GitHub Pages 공개 중: https://ajpapapapa.github.io/market-lounge/ (main 루트에서 배포, push하면 1~2분 뒤 반영)
 
 ## 파일
 - `index.html` 라운지, `heatmap.html` 섹터 히트맵, `stock.html?code=005930` 종목 상세
 - `css/style.css` 디자인 (모든 페이지 공용)
 - `js/data.js` 예시 데이터(`MARKET`, `HEATMAP`, `QUOTES` 객체). 나중에 API 데이터로 바꿀 부분은 여기만.
 - `js/common.js` 공용 함수(`fmt`, `dir`, `sign`, `arrow`, `stockUrl`), 상단·왼쪽 메뉴(`NAV`), 모바일 메뉴. 메뉴는 여기 한 곳만 고치면 된다. 선택된 메뉴는 `<body data-page>`로 정한다. `href: "#"`은 "준비 중"으로 표시.
+- `js/live.js` `data/prices.js`가 있으면 예시 데이터 위에 실제 시세를 덮어쓴다. `PRICE_NOTE`(기준일·출처 문구), `loadLiveHistory`도 여기.
 - `js/main.js` 라운지 화면. 작은 차트는 `fakeSeries`로 만든 가짜 흐름.
-- `js/stock.js` 종목 상세. 1년치 일봉은 `fakeHistory`가 만든 예시(현재가·1일·1주·1개월 등락률에 맞추고 호가 단위로 반올림). 실제 데이터가 생기면 이 함수만 바꾼다.
+- `js/stock.js` 종목 상세. 일봉은 `data/history/<코드>.js`, 없으면 `fakeHistory`가 만든 예시(현재가·등락률에 맞추고 호가 단위로 반올림).
 - `js/heatmap.js` 히트맵 화면. D3 treemap(cdnjs, d3 7.9.0). 칸 크기 시가총액, 색 등락률(1일 ±3%, 1주 ±6%, 1개월 ±12%에서 꽉 참).
+
+## 실제 데이터
+- 출처: 공공데이터포털 '금융위원회_주식시세정보' V2. 주소는 `https://apis.data.go.kr/1160100/GetStockSecuritiesInfoService_V2/getStockPriceInfo_V2` (예전 `/service/GetStockSecuritiesInfoService/getStockPriceInfo`는 이 키로 안 됨)
+- `scripts/fetch-data.mjs`가 `HEATMAP` 종목 70개의 1년치 일봉을 받아 `data/prices.js`, `data/history/<코드>.js`로 저장. 파일은 JSON 대신 .js(file://에서도 열리도록). `data/`는 자동 생성이라 직접 고치지 않는다.
+- 인증키: 로컬은 `.env`(`DATA_GO_KR_KEY=`, gitignore됨), GitHub는 Secrets의 `DATA_GO_KR_KEY`. 키를 코드·커밋·채팅에 남기지 않는다.
+- `.github/workflows/update-data.yml`이 평일 18:00(KST)에 실행해 바뀐 data/를 커밋 → Pages 자동 반영. Actions 탭에서 수동 실행도 가능.
+- 이 API에 없는 것: 지수, PER·PBR·배당, 외국인 지분율, 업종 분류. 지수는 '금융위원회_지수시세정보'를 따로 신청하면 됨.
 
 ## 디자인 원칙 (AI 티 안 나게)
 - 모서리 4~6px, 그라데이션·그림자·이모지·화살표 버튼·과한 애니메이션 쓰지 않음
@@ -23,8 +32,8 @@
 - 폰트 Pretendard
 
 ## 다음 후보
-- GitHub Pages로 먼저 공개
-- 이후 실제 데이터: 공공데이터포털(하루 지연 시세) 또는 증권사 API(KIS, 키움). API 키 때문에 서버 필요 → Vercel 추천, 로그인/DB는 Supabase.
+- 지수 실제 데이터 (금융위원회_지수시세정보)
+- 실시간 시세가 필요해지면 증권사 API(KIS, 키움) + 서버(Vercel). 로그인/DB는 Supabase.
 
 ## 주의
 - 실시간 시세를 공개 서비스로 보여주려면 KRX 시세 이용 계약 확인 필요

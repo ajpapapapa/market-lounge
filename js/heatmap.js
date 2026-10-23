@@ -209,7 +209,7 @@ function renderLegend() {
     .range(-r, r + 0.001, r / 3)
     .map((v) => `<span style="background:${color(v)}">${sign(v)}${fmt(v, r < 6 ? 1 : 0)}%</span>`)
     .join("");
-  document.getElementById("hm-time").textContent = `${HEATMAP.time.replaceAll("-", ".")} 기준 · 예시 데이터`;
+  document.getElementById("hm-time").textContent = PRICE_NOTE;
 }
 
 function renderSectorTable() {
