@@ -65,28 +65,51 @@ function renderHero() {
     </div>`;
 }
 
-function renderArticles() {
-  document.getElementById("article-list").innerHTML = MARKET.articles
-    .map((a, idx) => {
-      // 시세를 못 받은 종목은 썸네일에 이름만 남긴다
-      const quote = a.spark
-        ? `<span class="${dir(a.change)}">${sign(a.change)}${fmt(a.change)}%</span>
-            ${sparkline(a.spark.slice(-30), 100, 34, dir(a.change))}`
-        : "";
-      return `<li>
-        <a href="#">
-          <span class="num">${idx + 1}</span>
-          <div class="a-body">
-            <p class="a-title">${a.title}</p>
-            <p class="a-meta"><span class="chip">${a.tag}</span>${a.time}</p>
-          </div>
-          <div class="thumb">
-            <span class="thumb-name">${a.stock}</span>
-            ${quote}
-          </div>
-        </a>
-      </li>`;
-    })
+// 전일 순위표. 상승률·하락률·거래대금은 전체 시장(KOSPI·KOSDAQ, 거래대금 10억 이상), 거래량 급증은 히트맵 종목
+function renderRanks() {
+  const won = (n) => n.toLocaleString("ko-KR");
+  const pctCell = (n) => `<td class="${dir(n)}">${sign(n)}${fmt(n)}%</td>`;
+  // 종목 상세가 있는 종목(히트맵 종목)만 링크를 건다
+  const nameCell = (s) => (liveStock(s.code) ? `<a href="${stockUrl(s.code)}">${s.name}</a>` : s.name);
+  const priceCells = (s) => `<td>${won(s.price)}</td>${pctCell(s.change)}`;
+  const tables = [
+    { title: "상승률 상위", sub: "전체 시장", rows: LIVE.ranks.gainers, cols: ["종가", "등락률"], cells: priceCells },
+    { title: "하락률 상위", sub: "전체 시장", rows: LIVE.ranks.losers, cols: ["종가", "등락률"], cells: priceCells },
+    {
+      title: "거래대금 상위",
+      sub: "전체 시장 · 억원",
+      rows: LIVE.ranks.value,
+      cols: ["등락률", "거래대금"],
+      cells: (s) => `${pctCell(s.change)}<td>${won(s.value)}</td>`,
+    },
+    {
+      title: "거래량 급증",
+      sub: "히트맵 종목 · 20일 평균 대비",
+      rows: MARKET.volSurge,
+      cols: ["등락률", "거래량"],
+      cells: (s) => `${pctCell(s.change)}<td>${fmt(s.volRatio, 1)}배</td>`,
+    },
+  ];
+
+  document.getElementById("rank-sub").textContent = `${PRICE_NOTE} · 코넥스와 거래대금 10억원 미만 종목 제외`;
+  document.getElementById("rank-grid").innerHTML = tables
+    .map(
+      (t) => `<div>
+        <div class="rank-head"><h3>${t.title}</h3><span class="sub">${t.sub}</span></div>
+        <table class="rank-table">
+          <thead><tr><th class="r-num"></th><th class="r-name">종목</th>${t.cols.map((c) => `<th>${c}</th>`).join("")}</tr></thead>
+          <tbody>${t.rows
+            .map(
+              (s, i) => `<tr>
+                <td class="r-num">${i + 1}</td>
+                <td class="r-name">${nameCell(s)}<small>${s.market}</small></td>
+                ${t.cells(s)}
+              </tr>`
+            )
+            .join("")}</tbody>
+        </table>
+      </div>`
+    )
     .join("");
 }
 
@@ -145,5 +168,5 @@ function safely(render) {
 }
 
 if (LIVE_ON) {
-  [renderTicker, renderHero, renderArticles, renderStocks, renderSectors, renderFlows].forEach(safely);
+  [renderTicker, renderHero, renderRanks, renderStocks, renderSectors, renderFlows].forEach(safely);
 }

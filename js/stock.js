@@ -266,12 +266,22 @@ function renderRecent() {
 
 function renderRelated() {
   const mention = MARKET.stocks.find((s) => s.code === stock.code);
-  const articles = MARKET.articles.filter((a) => a.stock === stock.name);
+  // 라운지 전일 순위표에 이 종목이 들었으면 몇 위인지 보여 준다
+  const rankLists = [
+    ["상승률 상위", LIVE.ranks.gainers],
+    ["하락률 상위", LIVE.ranks.losers],
+    ["거래대금 상위", LIVE.ranks.value],
+    ["거래량 급증", MARKET.volSurge],
+  ];
+  const ranked = rankLists
+    .map(([title, rows]) => [title, rows.findIndex((s) => s.code === stock.code)])
+    .filter(([, i]) => i >= 0);
   const items = [
-    ...(mention ? [`<li><span class="chip">시황 언급</span><span class="r-title">${mention.note}</span><span class="r-time">오늘</span></li>`] : []),
-    ...articles.map(
-      (a) => `<li><span class="chip">${a.tag}</span><a href="#" class="r-title">${a.title}</a><span class="r-time">${a.time}</span></li>`
+    ...ranked.map(
+      ([title, i]) =>
+        `<li><span class="chip">전일 순위</span><a href="index.html" class="r-title">${title} ${i + 1}위</a><span class="r-time">${LIVE.date.replaceAll("-", ".")}</span></li>`
     ),
+    ...(mention ? [`<li><span class="chip">시황 메모</span><span class="r-title">${mention.note}</span><span class="r-time">예시</span></li>`] : []),
   ];
   document.getElementById("related").innerHTML = items.length
     ? items.join("")

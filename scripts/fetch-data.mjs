@@ -4,7 +4,8 @@
 // GitHub Actions가 평일마다 실행한다 (.github/workflows/update-data.yml)
 //
 // 만드는 파일 (브라우저에서 file://로 열어도 되도록 JSON 대신 <script>로 읽는 .js로 저장)
-//   data/prices.js          종목별 최신 시세, 1일·1주·1개월 등락률, 최근 60일 종가 → window.LIVE
+//   data/prices.js          종목별 최신 시세, 1일·1주·1개월 등락률, 최근 60일 종가, 거래량 배율
+//                           + 전체 시장(KOSPI·KOSDAQ) 상승률·하락률·거래대금 상위 → window.LIVE
 //   data/history/<코드>.js  종목별 1년치 일봉 [날짜, 종가, 거래량] → window.LIVE_HISTORY
 
 import fs from "node:fs";
@@ -16,6 +17,8 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const API = "https://apis.data.go.kr/1160100/GetStockSecuritiesInfoService_V2/getStockPriceInfo_V2";
 const DAYS = 250; // 1년 ≈ 250거래일
 const SPARK_DAYS = 60; // 라운지 작은 차트용 최근 종가 개수
+const RANK_SIZE = 5; // 라운지 순위표 종목 수
+const MIN_VALUE = 1e9; // 순위표에 넣을 최소 거래대금(10억원). 거래가 거의 없는 종목이 순위를 차지하지 않게
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ymd = (d) => d.toISOString().slice(0, 10).replaceAll("-", "");
@@ -90,6 +93,28 @@ async function fetchHistory(key, code) {
     .slice(-DAYS);
 }
 
+// 기준일 하루치 전체 종목을 한 번에 받아 순위표를 만든다. 코넥스와 거래대금 10억 미만은 뺀다
+async function fetchRanks(key, date) {
+  const rows = await call(key, { basDt: date, numOfRows: "5000", pageNo: "1" });
+  const items = rows
+    .filter((r) => (r.mrktCtg === "KOSPI" || r.mrktCtg === "KOSDAQ") && Number(r.trPrc) >= MIN_VALUE)
+    .map((r) => ({
+      code: r.srtnCd.replace(/\D/g, "").slice(-6),
+      name: r.itmsNm,
+      market: r.mrktCtg,
+      price: Number(r.clpr),
+      change: Number(r.fltRt),
+      value: Math.round(Number(r.trPrc) / 1e8), // 억원
+    }));
+  const top = (sorted) => sorted.slice(0, RANK_SIZE);
+  console.log(`순위표: 전체 ${rows.length}종목 중 ${items.length}종목 사용`);
+  return {
+    gainers: top([...items].sort((a, b) => b.change - a.change)),
+    losers: top([...items].sort((a, b) => a.change - b.change)),
+    value: top([...items].sort((a, b) => b.value - a.value)),
+  };
+}
+
 function writeJs(file, comment, body) {
   fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, `// 자동 생성 파일 — scripts/fetch-data.mjs가 만든다. 직접 고치지 않는다\n// ${comment}\n${body}\n`);
@@ -115,6 +140,8 @@ async function main() {
         cap: round2(last.cap / 1e12),
         volume: last.volume,
         spark: h.slice(-SPARK_DAYS).map((d) => d.close),
+        // 오늘 거래량 ÷ 직전 20거래일 평균 거래량
+        volRatio: round2(last.volume / (h.slice(-21, -1).reduce((sum, d) => sum + d.volume, 0) / 20)),
       };
       writeJs(
         path.join(ROOT, "data/history", `${s.code}.js`),
@@ -140,10 +167,11 @@ async function main() {
     .map((s) => s.date)
     .sort()
     .at(-1);
+  const ranks = await fetchRanks(key, date);
   writeJs(
     path.join(ROOT, "data/prices.js"),
-    "종목별 최신 시세 · 출처: 금융위원회_주식시세정보(공공데이터포털)",
-    `window.LIVE = ${JSON.stringify({ date: dashed(date), stocks }, null, 1)};`
+    "종목별 최신 시세와 전체 시장 순위 · 출처: 금융위원회_주식시세정보(공공데이터포털)",
+    `window.LIVE = ${JSON.stringify({ date: dashed(date), stocks, ranks }, null, 1)};`
   );
 
   console.log(`\n기준일 ${dashed(date)} · ${Object.keys(stocks).length}종목 저장${failed.length ? ` · 실패 ${failed.join(", ")}` : ""}`);
