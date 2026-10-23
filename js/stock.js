@@ -1,5 +1,5 @@
-// 종목 상세 — 데이터는 data.js의 HEATMAP(종목·업종·등락률)과 QUOTES(시세·지표)에서 가져온다
-// 실제 시세가 있으면 live.js가 그 위에 덮어쓰고, 일봉도 data/history/<코드>.js를 쓴다
+// 종목 상세 — 종목·업종은 data.js의 HEATMAP, 시세는 live.js가 채운 실제 값, 일봉은 data/history/<코드>.js
+// PER·PBR·배당·외국인 지분율은 data.js QUOTES의 예시 값
 // fmt, dir, sign, arrow, stockUrl은 common.js에, PRICE_NOTE, loadLiveHistory는 live.js에 있다
 
 // 모든 종목을 시장·업종 정보와 함께 펼쳐 둔다
@@ -16,61 +16,8 @@ const stock = found || ALL[0];
 const won = (n) => Math.round(n).toLocaleString("ko-KR");
 const pct = (n) => `${sign(n)}${fmt(n)}%`;
 const dayName = ["일", "월", "화", "수", "목", "금", "토"];
-// 호가 단위로 맞춘다
-function tick(price) {
-  const unit =
-    price < 2000 ? 1 : price < 5000 ? 5 : price < 20000 ? 10 : price < 50000 ? 50 : price < 200000 ? 100 : price < 500000 ? 500 : 1000;
-  return Math.round(price / unit) * unit;
-}
-
 const dateText = (d) =>
   `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
-
-// 실제 일봉이 없을 때 쓰는 예시용 1년치 일봉
-// 마지막 값이 현재가, 1일·1주·1개월 전 종가가 등락률과 맞도록 맞춘다
-function fakeHistory(s, length = 250) {
-  let seed = Number(s.code) % 233280 || 1;
-  const rand = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
-
-  // 로그 가격으로 무작위 걸음을 만든다
-  const walk = [0];
-  for (let i = 1; i < length; i++) walk.push(walk[i - 1] + (rand() - 0.5) * 0.04);
-
-  // 기준점 [몇 번째 날, 그날 로그 가격]. 1개월 = 21거래일, 1주 = 5거래일
-  const last = length - 1;
-  const anchors = [
-    [last - 21, s.price / (1 + s.change[2] / 100)],
-    [last - 5, s.price / (1 + s.change[1] / 100)],
-    [last - 1, s.price / (1 + s.change[0] / 100)],
-    [last, s.price],
-  ].map(([i, p]) => [i, Math.log(p)]);
-
-  // 기준점 사이는 걸음 모양을 살린 채 양 끝이 맞도록 기울기를 더한다
-  const logs = walk.map((w, i) => {
-    const [first, firstLog] = anchors[0];
-    if (i <= first) return w + firstLog - walk[first];
-    const k = anchors.findIndex(([a]) => a >= i);
-    const [a, la] = anchors[k - 1];
-    const [b, lb] = anchors[k];
-    return w + (la - walk[a]) + (lb - la - (walk[b] - walk[a])) * ((i - a) / (b - a));
-  });
-
-  // 기준일부터 거꾸로 주말을 빼고 거래일을 센다 (공휴일은 무시)
-  const dates = [];
-  const day = new Date(`${HEATMAP.time.slice(0, 10)}T00:00:00`);
-  while (dates.length < length) {
-    if (day.getDay() % 6 !== 0) dates.unshift(new Date(day));
-    day.setDate(day.getDate() - 1);
-  }
-
-  // 거래량: 상장주식수의 0.2% 안팎, 크게 움직인 날은 더 많이
-  const shares = (s.cap * 1e12) / s.price;
-  return logs.map((l, i) => ({
-    date: dates[i],
-    close: tick(Math.exp(l)),
-    volume: Math.round(shares * 0.002 * (0.4 + rand() * 0.8 + (i ? Math.abs(l - logs[i - 1]) * 25 : 0))),
-  }));
-}
 
 let history = [];
 
@@ -383,12 +330,17 @@ document.querySelectorAll("#range-seg button").forEach((btn, _, all) =>
   })
 );
 
-setupSearch();
+if (LIVE_ON) {
+  setupSearch();
+  loadLiveHistory(stock.code).then(start);
+}
 
-loadLiveHistory(stock.code).then((live) => {
-  history = live
-    ? live.map(([date, close, volume]) => ({ date: new Date(`${date}T00:00:00`), close, volume }))
-    : fakeHistory(stock);
+function start(live) {
+  if (!live) {
+    document.getElementById("stock-head").innerHTML = `<p class="stock-missing">${stock.name}의 일봉 데이터를 불러오지 못했습니다. 잠시 뒤 새로고침해 주세요.</p>`;
+    return;
+  }
+  history = live.map(([date, close, volume]) => ({ date: new Date(`${date}T00:00:00`), close, volume }));
 
   renderHead();
   renderMetrics();
@@ -403,4 +355,4 @@ loadLiveHistory(stock.code).then((live) => {
     lastWidth = chartBox.clientWidth;
     renderChart();
   }).observe(chartBox);
-});
+}

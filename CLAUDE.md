@@ -4,18 +4,18 @@
 
 ## 지금 상태
 - 1단계: 예시 데이터로 화면 만들기. 라운지(메인), 섹터 히트맵, 종목 상세 페이지 완성.
-- 2단계: 종목 시세를 실제 데이터로 연결 (공공데이터포털, 하루 늦은 종가). 지수·PER 등 나머지는 아직 예시.
+- 2단계: 종목 시세를 실제 데이터로 연결 (공공데이터포털, 하루 늦은 종가, 하루 한 번 갱신). 종목 시세에는 예시 값이 남아 있지 않다. 지수·PER·기사·투자자별 순매수는 아직 예시.
 - 순수 HTML/CSS/JS (프레임워크 없음). 사용자가 직접 고른 방식.
 - GitHub: https://github.com/ajpapapapa/market-lounge (main 브랜치). GitHub Pages 공개 중: https://ajpapapapa.github.io/market-lounge/ (main 루트에서 배포, push하면 1~2분 뒤 반영)
 
 ## 파일
 - `index.html` 라운지, `heatmap.html` 섹터 히트맵, `stock.html?code=005930` 종목 상세
 - `css/style.css` 디자인 (모든 페이지 공용)
-- `js/data.js` 예시 데이터(`MARKET`, `HEATMAP`, `QUOTES` 객체). 나중에 API 데이터로 바꿀 부분은 여기만.
+- `js/data.js` 종목 목록·업종 분류(`HEATMAP`), 시황 메모(`MARKET.stocks`), 아직 API가 없는 예시 항목(지수, 기사, 투자자별 순매수, `QUOTES`의 PER 등). 종목 가격·등락률·시가총액은 여기 없다.
 - `js/common.js` 공용 함수(`fmt`, `dir`, `sign`, `arrow`, `stockUrl`), 상단·왼쪽 메뉴(`NAV`), 모바일 메뉴. 메뉴는 여기 한 곳만 고치면 된다. 선택된 메뉴는 `<body data-page>`로 정한다. `href: "#"`은 "준비 중"으로 표시.
-- `js/live.js` `data/prices.js`가 있으면 예시 데이터 위에 실제 시세를 덮어쓴다. `PRICE_NOTE`(기준일·출처 문구), `loadLiveHistory`도 여기.
-- `js/main.js` 라운지 화면. 작은 차트는 `fakeSeries`로 만든 가짜 흐름.
-- `js/stock.js` 종목 상세. 일봉은 `data/history/<코드>.js`, 없으면 `fakeHistory`가 만든 예시(현재가·등락률에 맞추고 호가 단위로 반올림).
+- `js/live.js` `data/prices.js`의 실제 시세를 data.js 종목 목록에 채운다. 못 읽으면 가짜 숫자 없이 "시세 데이터를 불러오지 못했습니다"만 보여 주고, 각 페이지는 `LIVE_ON`일 때만 그린다. `PRICE_NOTE`, `loadLiveHistory`도 여기.
+- `js/main.js` 라운지 화면. 작은 차트는 실제 최근 종가(`spark`), 대표 기사 배경은 KOSPI 종목 시가총액 합계 흐름(`MARKET.capTrend`).
+- `js/stock.js` 종목 상세. 일봉은 `data/history/<코드>.js`.
 - `js/heatmap.js` 히트맵 화면. D3 treemap(cdnjs, d3 7.9.0). 칸 크기 시가총액, 색 등락률(1일 ±3%, 1주 ±6%, 1개월 ±12%에서 꽉 참).
 
 ## 실제 데이터

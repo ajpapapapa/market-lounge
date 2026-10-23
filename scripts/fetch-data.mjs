@@ -4,7 +4,7 @@
 // GitHub Actions가 평일마다 실행한다 (.github/workflows/update-data.yml)
 //
 // 만드는 파일 (브라우저에서 file://로 열어도 되도록 JSON 대신 <script>로 읽는 .js로 저장)
-//   data/prices.js          종목별 최신 시세와 1일·1주·1개월 등락률 → window.LIVE
+//   data/prices.js          종목별 최신 시세, 1일·1주·1개월 등락률, 최근 60일 종가 → window.LIVE
 //   data/history/<코드>.js  종목별 1년치 일봉 [날짜, 종가, 거래량] → window.LIVE_HISTORY
 
 import fs from "node:fs";
@@ -15,6 +15,7 @@ import { fileURLToPath } from "node:url";
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const API = "https://apis.data.go.kr/1160100/GetStockSecuritiesInfoService_V2/getStockPriceInfo_V2";
 const DAYS = 250; // 1년 ≈ 250거래일
+const SPARK_DAYS = 60; // 라운지 작은 차트용 최근 종가 개수
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ymd = (d) => d.toISOString().slice(0, 10).replaceAll("-", "");
@@ -113,6 +114,7 @@ async function main() {
         change: [last.change, round2((last.close / ago(5) - 1) * 100), round2((last.close / ago(21) - 1) * 100)],
         cap: round2(last.cap / 1e12),
         volume: last.volume,
+        spark: h.slice(-SPARK_DAYS).map((d) => d.close),
       };
       writeJs(
         path.join(ROOT, "data/history", `${s.code}.js`),

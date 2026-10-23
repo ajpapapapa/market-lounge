@@ -1,33 +1,36 @@
-// 실제 시세 덮어쓰기 — data/prices.js(scripts/fetch-data.mjs가 만든 파일)가 있으면 예시 데이터 위에 덮어쓴다
-// 파일이 없거나 못 읽으면 data.js의 예시 데이터를 그대로 쓴다
-// 실제 값으로 바뀌는 것: 종목 현재가·등락률(1일·1주·1개월)·시가총액·거래량, 종목 상세의 1년치 일봉
-// 라운지의 업종별 등락도 실제 등락률로 다시 계산한다
-// 계속 예시인 것: 지수, PER·PBR·배당·외국인 지분율, 업종 분류, 기사, 투자자별 순매수
+// 실제 시세 채우기 — data/prices.js(scripts/fetch-data.mjs가 만든 파일)의 값을 data.js의 종목 목록에 채운다
+// 채우는 것: 종목 현재가·등락률(1일·1주·1개월)·시가총액·거래량·최근 60일 종가, 라운지 업종별 등락
+// 파일을 못 읽으면 가짜 숫자를 보여 주지 않고 안내 문구만 띄운다. 각 페이지는 LIVE_ON일 때만 그린다
+// 계속 예시인 것: 지수, PER·PBR·배당·외국인 지분율, 기사, 투자자별 순매수
 
 const LIVE_ON = typeof window.LIVE === "object" && window.LIVE !== null;
+const liveStock = (code) => (LIVE_ON ? LIVE.stocks[code] : undefined);
 
 if (LIVE_ON) {
   const nameToCode = {};
   for (const m of Object.values(HEATMAP.markets)) {
     for (const sec of m.sectors) {
+      // 데이터를 못 받은 종목(신규 상장 등)은 화면에서 뺀다
+      sec.stocks = sec.stocks.filter((s) => liveStock(s.code));
       for (const s of sec.stocks) {
+        const live = liveStock(s.code);
         nameToCode[s.name] = s.code;
-        const live = LIVE.stocks[s.code];
-        if (!live) continue;
         s.change = live.change;
         s.cap = live.cap;
         QUOTES[s.code].price = live.price;
       }
     }
+    m.sectors = m.sectors.filter((sec) => sec.stocks.length);
   }
 
+  MARKET.stocks = MARKET.stocks.filter((s) => liveStock(s.code));
   MARKET.stocks.forEach((s) => {
-    const live = LIVE.stocks[s.code];
-    if (live) Object.assign(s, { price: live.price, change: live.change[0] });
+    const live = liveStock(s.code);
+    Object.assign(s, { price: live.price, change: live.change[0], spark: live.spark });
   });
   MARKET.articles.forEach((a) => {
-    const live = LIVE.stocks[nameToCode[a.stock]];
-    if (live) a.change = live.change[0];
+    const live = liveStock(nameToCode[a.stock]);
+    if (live) Object.assign(a, { change: live.change[0], spark: live.spark });
   });
 
   // 라운지의 업종별 등락: KOSPI 업종별 시가총액 가중 1일 등락률, 가장 강한 4개와 약한 4개
@@ -40,25 +43,34 @@ if (LIVE_ON) {
     .sort((a, b) => b.change - a.change);
   MARKET.sectors = sectors.length > 8 ? [...sectors.slice(0, 4), ...sectors.slice(-4)] : sectors;
 
+  // 라운지 대표 기사 배경: KOSPI 종목 시가총액 합계의 최근 흐름 (오늘 시가총액 × 그날 종가 / 오늘 종가)
+  const kospi = HEATMAP.markets.kospi.sectors.flatMap((sec) => sec.stocks).map((s) => liveStock(s.code));
+  const days = Math.min(...kospi.map((s) => s.spark.length));
+  MARKET.capTrend = Array.from({ length: days }, (_, i) =>
+    kospi.reduce((sum, s) => sum + (s.cap * s.spark[s.spark.length - days + i]) / s.price, 0)
+  );
+
   MARKET.date = LIVE.date;
-  HEATMAP.time = LIVE.date;
+} else {
+  // 실제 시세를 못 읽었을 때: 본문을 안내 문구로 바꾼다
+  document.querySelector("main").innerHTML = `
+    <div class="data-error">
+      <h1>시세 데이터를 불러오지 못했습니다</h1>
+      <p>잠시 뒤 새로고침해 주세요. 계속 이 화면이 나오면 data/prices.js가 만들어졌는지 확인하세요.</p>
+    </div>`;
 }
 
 // 화면에 붙는 기준일·출처 문구
-const PRICE_NOTE = LIVE_ON
-  ? `${LIVE.date.replaceAll("-", ".")} 종가 기준 · 출처 금융위원회(공공데이터포털)`
-  : `${HEATMAP.time.replaceAll("-", ".")} 기준 · 예시 데이터`;
+const PRICE_NOTE = LIVE_ON ? `${LIVE.date.replaceAll("-", ".")} 종가 기준 · 출처 금융위원회(공공데이터포털)` : "";
 
 document.querySelectorAll(".data-note").forEach((el) => {
-  el.textContent = LIVE_ON
-    ? "종목 시세는 금융위원회_주식시세정보(공공데이터포털)를 하루 늦게 반영합니다. 지수, 기사, PER 등 나머지 항목은 예시 데이터입니다."
-    : "화면의 시세와 기사는 예시 데이터입니다.";
+  el.textContent =
+    "종목 시세는 금융위원회_주식시세정보(공공데이터포털)를 하루 늦게 반영합니다. 지수, 기사, PER 등 나머지 항목은 예시 데이터입니다.";
 });
 
 // 종목 상세에서 쓰는 1년치 일봉. 없으면 null
 function loadLiveHistory(code) {
   return new Promise((resolve) => {
-    if (!LIVE_ON) return resolve(null);
     const script = document.createElement("script");
     script.src = `data/history/${code}.js`;
     script.onload = () => resolve((window.LIVE_HISTORY || {})[code] || null);

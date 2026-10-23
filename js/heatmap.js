@@ -283,15 +283,17 @@ function setupSeg(id, key, parse) {
   );
 }
 
-setupSeg("market-seg", "market", String);
-setupSeg("period-seg", "period", Number);
+if (LIVE_ON) {
+  setupSeg("market-seg", "market", String);
+  setupSeg("period-seg", "period", Number);
 
-// 화면 폭이 바뀌면 다시 그린다
-let lastWidth = 0;
-new ResizeObserver(() => {
-  if (box.clientWidth === lastWidth) return;
-  lastWidth = box.clientWidth;
-  renderTreemap();
-}).observe(box);
+  // 화면 폭이 바뀌면 다시 그린다
+  let lastWidth = 0;
+  new ResizeObserver(() => {
+    if (box.clientWidth === lastWidth) return;
+    lastWidth = box.clientWidth;
+    renderTreemap();
+  }).observe(box);
 
-render();
+  render();
+}

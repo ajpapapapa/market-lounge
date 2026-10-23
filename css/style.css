@@ -1308,3 +1308,20 @@ a.soon {
     column-gap: 16px;
   }
 }
+
+/* 실제 시세를 못 읽었을 때 */
+.data-error {
+  padding: 80px 0;
+  text-align: center;
+}
+
+.data-error h1 {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.data-error p {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-3);
+}
