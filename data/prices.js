@@ -1,5 +1,5 @@
 // 자동 생성 파일 — scripts/fetch-data.mjs가 만든다. 직접 고치지 않는다
-// 종목별 최신 시세와 전체 시장 순위 · 출처: 금융위원회_주식시세정보(공공데이터포털)
+// 히트맵 종목 최신 시세와 전체 시장 순위 · 출처: 금융위원회_주식시세정보(공공데이터포털)
 window.LIVE = {
  "date": "2026-10-22",
  "stocks": {
@@ -5397,7 +5397,7 @@ window.LIVE = {
  "ranks": {
   "gainers": [
    {
-    "code": "00130",
+    "code": "0013Y0",
     "name": "엠에스바이오",
     "market": "KOSDAQ",
     "price": 13320,
@@ -5497,7 +5497,7 @@ window.LIVE = {
     "value": 24930
    },
    {
-    "code": "00130",
+    "code": "0013Y0",
     "name": "엠에스바이오",
     "market": "KOSDAQ",
     "price": 13320,
@@ -5513,7 +5513,7 @@ window.LIVE = {
     "value": 9747
    },
    {
-    "code": "01580",
+    "code": "0158S0",
     "name": "엘리스",
     "market": "KOSDAQ",
     "price": 93600,

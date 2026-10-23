@@ -1304,6 +1304,10 @@ a.soon {
   }
 }
 
+[hidden] {
+  display: none !important;
+}
+
 /* 실제 시세를 못 읽었을 때 */
 .data-error {
   padding: 80px 0;

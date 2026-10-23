@@ -66,7 +66,7 @@
           <div>
             <div class="block-head">
               <h2>주요 지표</h2>
-              <span class="sub">PER·PBR·배당·외국인은 예시</span>
+              <span class="sub" id="metrics-sub"></span>
             </div>
             <dl class="metrics" id="metrics"></dl>
           </div>
@@ -106,6 +106,7 @@
     <!-- 시세 파일은 10분마다 주소가 바뀌게 해서 브라우저가 예전 시세를 쓰지 않게 한다 -->
     <script>
       document.write('<script src="data/prices.js?t=' + Math.floor(Date.now() / 600000) + '"><\/script>');
+      document.write('<script src="data/stocks.js?t=' + Math.floor(Date.now() / 600000) + '"><\/script>');
     </script>
     <script src="js/live.js"></script>
     <script src="js/common.js"></script>

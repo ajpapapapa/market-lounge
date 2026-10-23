@@ -1,17 +1,34 @@
-// 종목 상세 — 종목·업종은 data.js의 HEATMAP, 시세는 live.js가 채운 실제 값, 일봉은 data/history/<코드>.js
-// PER·PBR·배당·외국인 지분율은 data.js QUOTES의 예시 값
+// 종목 상세 — 전 종목 시세는 data/stocks.js(STOCKS), 일봉은 data/history/<코드>.js
+// 히트맵 70종목은 업종(HEATMAP)과 PER·PBR·배당·외국인 지분율(QUOTES, 예시 값)이 더 있다
 // fmt, dir, sign, arrow, stockUrl은 common.js에, PRICE_NOTE, loadLiveHistory는 live.js에 있다
 
-// 모든 종목을 시장·업종 정보와 함께 펼쳐 둔다
-const ALL = Object.values(HEATMAP.markets).flatMap((m) =>
+// 히트맵 종목: 시장·업종·지표까지 펼쳐 둔다
+const HEATMAP_STOCKS = Object.values(HEATMAP.markets).flatMap((m) =>
   m.sectors.flatMap((sec) =>
     sec.stocks.map((s) => ({ ...s, ...QUOTES[s.code], market: m.index, sector: sec.name }))
   )
 );
+const heatmapByCode = Object.fromEntries(HEATMAP_STOCKS.map((s) => [s.code, s]));
+
+// 전 종목 (시가총액 큰 순). STOCKS를 못 읽으면 히트맵 종목만
+const ALL = window.STOCKS
+  ? Object.entries(STOCKS.stocks)
+      .map(([code, [name, market, price, diff, change, cap, volume, value]]) => ({
+        code,
+        name,
+        market,
+        price,
+        change: [change],
+        cap,
+        value,
+        ...heatmapByCode[code],
+      }))
+      .sort((a, b) => b.cap - a.cap)
+  : HEATMAP_STOCKS;
 
 const askedCode = new URLSearchParams(location.search).get("code");
 const found = ALL.find((s) => s.code === askedCode);
-const stock = found || ALL[0];
+const stock = found || ALL.find((s) => s.code === "005930") || ALL[0];
 
 const won = (n) => Math.round(n).toLocaleString("ko-KR");
 const pct = (n) => `${sign(n)}${fmt(n)}%`;
@@ -21,21 +38,23 @@ const dateText = (d) =>
 
 let history = [];
 
-// i번째 날의 등락률. 마지막 날은 라운지·히트맵과 같은 공식 등락률을 쓴다
-const changeAt = (i) =>
-  i === history.length - 1 ? stock.change[0] : (history[i].close / history[i - 1].close - 1) * 100;
+// i번째 날의 등락률. 마지막 날은 라운지·히트맵과 같은 공식 등락률을 쓴다. 전날이 없으면(상장 첫날 등) null
+const changeAt = (i) => {
+  if (i === history.length - 1) return stock.change[0];
+  return i > 0 ? (history[i].close / history[i - 1].close - 1) * 100 : null;
+};
 let range = 63;
 
 const chartBox = document.getElementById("chart");
 const chartTip = document.getElementById("chart-tip");
 
 function renderHead() {
-  const prev = history[history.length - 2].close;
-  const diff = stock.price - prev;
+  // 신규 상장 등으로 일봉이 하루뿐이면 전일 대비를 0으로 둔다
+  const diff = history.length > 1 ? stock.price - history[history.length - 2].close : 0;
   document.title = `${stock.name} | 시장노트`;
   document.getElementById("stock-head").innerHTML = `
-    ${found || !askedCode ? "" : `<p class="stock-missing">종목코드 ${askedCode}의 예시 데이터가 없어 ${stock.name} 화면을 대신 보여 줍니다.</p>`}
-    <p class="stock-path">${stock.market} · ${stock.sector}</p>
+    ${found || !askedCode ? "" : `<p class="stock-missing">종목코드 ${askedCode}를 찾지 못해 ${stock.name} 화면을 대신 보여 줍니다.</p>`}
+    <p class="stock-path">${stock.market}${stock.sector ? ` · ${stock.sector}` : ""}</p>
     <div class="stock-title"><h1>${stock.name}</h1><span class="code">${stock.code}</span></div>
     <p class="stock-price">
       <strong>${won(stock.price)}</strong><small>원</small>
@@ -201,7 +220,7 @@ function renderChart() {
       <p class="tip-sub">${dateText(d.date)} (${dayName[d.date.getDay()]})</p>
       <table>
         <tr><th>종가</th><td>${won(d.close)}</td></tr>
-        ${gi ? `<tr><th>전일 대비</th><td class="${dir(changeAt(gi))}">${pct(changeAt(gi))}</td></tr>` : ""}
+        ${changeAt(gi) === null ? "" : `<tr><th>전일 대비</th><td class="${dir(changeAt(gi))}">${pct(changeAt(gi))}</td></tr>`}
         <tr><th>거래량</th><td>${won(d.volume)}</td></tr>
       </table>`;
     chartTip.hidden = false;
@@ -230,16 +249,28 @@ function renderChart() {
 
 function renderMetrics() {
   const year = history.map((d) => d.close);
+  const capText = stock.cap >= 1 ? `${fmt(stock.cap, stock.cap < 10 ? 1 : 0)}조원` : `${won(stock.cap * 10000)}억원`;
   const items = [
-    ["시가총액", `${fmt(stock.cap, stock.cap < 10 ? 1 : 0)}조원`],
+    ["시가총액", capText],
     ["거래량", `${won(history[history.length - 1].volume)}주`],
     ["52주 최고", `${won(Math.max(...year))}원`],
     ["52주 최저", `${won(Math.min(...year))}원`],
-    ["PER", stock.per === null ? "적자" : `${fmt(stock.per)}배`],
-    ["PBR", `${fmt(stock.pbr)}배`],
-    ["배당수익률", `${fmt(stock.div)}%`],
-    ["외국인 지분율", `${fmt(stock.foreign)}%`],
   ];
+  // 히트맵 종목만 PER 등 예시 지표가 있다. 나머지는 실제 값(거래대금, 1개월 수익률)으로 채운다
+  const hasExample = stock.pbr !== undefined;
+  if (hasExample) {
+    items.push(
+      ["PER", stock.per === null ? "적자" : `${fmt(stock.per)}배`],
+      ["PBR", `${fmt(stock.pbr)}배`],
+      ["배당수익률", `${fmt(stock.div)}%`],
+      ["외국인 지분율", `${fmt(stock.foreign)}%`]
+    );
+  } else {
+    const monthAgo = history[Math.max(0, history.length - 22)].close;
+    const month = (stock.price / monthAgo - 1) * 100;
+    items.push(["거래대금", `${won(stock.value)}억원`], ["1개월 수익률", `<span class="${dir(month)}">${pct(month)}</span>`]);
+  }
+  document.getElementById("metrics-sub").textContent = hasExample ? "PER·PBR·배당·외국인은 예시" : "";
   document.getElementById("metrics").innerHTML = items
     .map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`)
     .join("");
@@ -247,7 +278,7 @@ function renderMetrics() {
 
 function renderRecent() {
   const last = history.length - 1;
-  const rows = [0, 1, 2, 3, 4].map((k) => last - k);
+  const rows = [0, 1, 2, 3, 4].map((k) => last - k).filter((i) => i >= 0);
   document.getElementById("recent-table").innerHTML = `
     <thead><tr><th></th><th>종가</th><th>등락률</th><th>거래량</th></tr></thead>
     <tbody>${rows
@@ -257,7 +288,7 @@ function renderRecent() {
         return `<tr>
           <th>${d.date.getMonth() + 1}.${d.date.getDate()} (${dayName[d.date.getDay()]})</th>
           <td>${won(d.close)}</td>
-          <td class="${dir(change)}">${pct(change)}</td>
+          <td class="${change === null ? "" : dir(change)}">${change === null ? "-" : pct(change)}</td>
           <td>${won(d.volume)}</td>
         </tr>`;
       })
@@ -288,6 +319,11 @@ function renderRelated() {
 }
 
 function renderPeers() {
+  // 업종 분류는 히트맵 종목에만 있다. 없으면 이 구역을 숨긴다
+  if (!stock.sector) {
+    document.getElementById("peer-table").closest("section").hidden = true;
+    return;
+  }
   const peers = ALL.filter((s) => s.market === stock.market && s.sector === stock.sector).sort((a, b) => b.cap - a.cap);
   document.getElementById("peer-title").textContent = `같은 업종 종목 · ${stock.sector}`;
   const table = document.getElementById("peer-table");
@@ -313,7 +349,7 @@ function renderPeers() {
   );
 }
 
-// 종목 검색: 목록에서 고르거나, 이름 일부·코드를 입력하고 Enter
+// 종목 검색 (전 종목): 목록에서 고르거나, 이름 일부·코드를 입력하고 Enter
 function setupSearch() {
   const input = document.getElementById("search");
   const option = (s) => `${s.name} ${s.code}`;
@@ -324,7 +360,12 @@ function setupSearch() {
   document.getElementById("search-form").addEventListener("submit", (e) => {
     e.preventDefault();
     const q = input.value.trim().toLowerCase();
-    if (q) go(ALL.find((s) => s.code === q || s.name.toLowerCase() === q) || ALL.find((s) => option(s).toLowerCase().includes(q)));
+    if (q) {
+      go(
+        ALL.find((s) => s.code.toLowerCase() === q || s.name.toLowerCase() === q) ||
+          ALL.find((s) => option(s).toLowerCase().includes(q))
+      );
+    }
   });
 
   if (location.hash === "#search") input.focus();

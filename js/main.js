@@ -69,8 +69,7 @@ function renderHero() {
 function renderRanks() {
   const won = (n) => n.toLocaleString("ko-KR");
   const pctCell = (n) => `<td class="${dir(n)}">${sign(n)}${fmt(n)}%</td>`;
-  // 종목 상세가 있는 종목(히트맵 종목)만 링크를 건다
-  const nameCell = (s) => (liveStock(s.code) ? `<a href="${stockUrl(s.code)}">${s.name}</a>` : s.name);
+  const nameCell = (s) => `<a href="${stockUrl(s.code)}">${s.name}</a>`;
   const priceCells = (s) => `<td>${won(s.price)}</td>${pctCell(s.change)}`;
   const tables = [
     { title: "상승률 상위", sub: "전체 시장", rows: LIVE.ranks.gainers, cols: ["종가", "등락률"], cells: priceCells },
