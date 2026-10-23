@@ -87,6 +87,7 @@ async function fetchHistory(key, code) {
       diff: Number(r.vs),
       change: Number(r.fltRt),
       volume: Number(r.trqu),
+      value: Number(r.trPrc),
       cap: Number(r.mrktTotAmt),
     }))
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -139,6 +140,8 @@ async function main() {
         change: [last.change, round2((last.close / ago(5) - 1) * 100), round2((last.close / ago(21) - 1) * 100)],
         cap: round2(last.cap / 1e12),
         volume: last.volume,
+        value: Math.round(last.value / 1e8), // 거래대금(억원)
+        high52: Math.max(...h.map((d) => d.close)), // 52주(약 250거래일) 최고 종가
         spark: h.slice(-SPARK_DAYS).map((d) => d.close),
         // 오늘 거래량 ÷ 직전 20거래일 평균 거래량
         volRatio: round2(last.volume / (h.slice(-21, -1).reduce((sum, d) => sum + d.volume, 0) / 20)),

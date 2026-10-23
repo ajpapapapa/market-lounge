@@ -1,7 +1,7 @@
 // 실제 시세 채우기 — data/prices.js(scripts/fetch-data.mjs가 만든 파일)의 값을 data.js의 종목 목록에 채운다
-// 채우는 것: 종목 현재가·등락률(1일·1주·1개월)·시가총액·거래량·최근 60일 종가, 라운지 업종별 등락·거래량 급증
+// 채우는 것: 종목 현재가·등락률(1일·1주·1개월)·시가총액·거래량·최근 60일 종가, 라운지 전일 주목 종목·업종별 등락·거래량 급증
 // 파일을 못 읽으면 가짜 숫자를 보여 주지 않고 안내 문구만 띄운다. 각 페이지는 LIVE_ON일 때만 그린다
-// 계속 예시인 것: 지수, PER·PBR·배당·외국인 지분율, 투자자별 순매수, 시황 메모(MARKET.stocks의 note)
+// 계속 예시인 것: 지수, PER·PBR·배당·외국인 지분율, 투자자별 순매수
 
 const LIVE_ON = typeof window.LIVE === "object" && window.LIVE !== null;
 const liveStock = (code) => (LIVE_ON ? LIVE.stocks[code] : undefined);
@@ -21,11 +21,15 @@ if (LIVE_ON) {
     m.sectors = m.sectors.filter((sec) => sec.stocks.length);
   }
 
-  MARKET.stocks = MARKET.stocks.filter((s) => liveStock(s.code));
-  MARKET.stocks.forEach((s) => {
-    const live = liveStock(s.code);
-    Object.assign(s, { price: live.price, change: live.change[0], spark: live.spark });
-  });
+  // 라운지의 전일 주목 종목: 히트맵 종목 중 전일 거래대금 상위 8개
+  MARKET.stocks = Object.values(HEATMAP.markets)
+    .flatMap((m) => m.sectors.flatMap((sec) => sec.stocks.map((s) => ({ ...s, market: m.index }))))
+    .map((s) => {
+      const live = liveStock(s.code);
+      return { ...s, price: live.price, change: live.change[0], spark: live.spark, value: live.value, high52: live.high52 };
+    })
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8);
   // 라운지의 거래량 급증: 히트맵 종목 중 오늘 거래량 ÷ 직전 20일 평균이 큰 순서
   MARKET.volSurge = Object.values(HEATMAP.markets)
     .flatMap((m) => m.sectors.flatMap((sec) => sec.stocks.map((s) => ({ ...s, market: m.index }))))
@@ -65,7 +69,7 @@ const PRICE_NOTE = LIVE_ON ? `${LIVE.date.replaceAll("-", ".")} 종가 기준 ·
 
 document.querySelectorAll(".data-note").forEach((el) => {
   el.textContent =
-    "종목 시세와 순위는 금융위원회_주식시세정보(공공데이터포털)를 하루 늦게 반영합니다. 지수, PER 등, 투자자별 순매수, 시황 메모는 예시 데이터입니다.";
+    "종목 시세와 순위는 금융위원회_주식시세정보(공공데이터포털)를 하루 늦게 반영합니다. 지수, PER 등, 투자자별 순매수는 예시 데이터입니다.";
 });
 
 // 종목 상세에서 쓰는 1년치 일봉. 없으면 null

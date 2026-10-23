@@ -11,10 +11,10 @@
 ## 파일
 - `index.html` 라운지, `heatmap.html` 섹터 히트맵, `stock.html?code=005930` 종목 상세
 - `css/style.css` 디자인 (모든 페이지 공용)
-- `js/data.js` 종목 목록·업종 분류(`HEATMAP`), 시황 메모(`MARKET.stocks`의 note, 예시), 아직 API가 없는 예시 항목(지수, 투자자별 순매수, `QUOTES`의 PER 등). 가짜 기사는 지웠다. 종목 가격·등락률·시가총액은 여기 없다.
+- `js/data.js` 종목 목록·업종 분류(`HEATMAP`), 아직 API가 없는 예시 항목(지수, 투자자별 순매수, `QUOTES`의 PER 등). 지어낸 기사·시황 메모는 지웠다(사실처럼 읽히는 지어낸 문장은 넣지 않는다). 종목 가격·등락률·시가총액은 여기 없다.
 - `js/common.js` 공용 함수(`fmt`, `dir`, `sign`, `arrow`, `stockUrl`), 상단·왼쪽 메뉴(`NAV`), 모바일 메뉴. 메뉴는 여기 한 곳만 고치면 된다. 선택된 메뉴는 `<body data-page>`로 정한다. `href: "#"`은 "준비 중"으로 표시.
 - `js/live.js` `data/prices.js`의 실제 시세를 data.js 종목 목록에 채운다. 못 읽으면 가짜 숫자 없이 "시세 데이터를 불러오지 못했습니다"만 보여 주고, 각 페이지는 `LIVE_ON`일 때만 그린다. `PRICE_NOTE`, `loadLiveHistory`도 여기.
-- `js/main.js` 라운지 화면. 대표 영역은 실제 시세로 자동 생성하는 "전일 시장 요약", 그 아래 "전일 순위" 표 4개(상승률·하락률·거래대금 상위는 전체 시장 `LIVE.ranks`, 거래량 급증은 히트맵 종목 `MARKET.volSurge`). 작은 차트는 실제 최근 종가(`spark`).
+- `js/main.js` 라운지 화면. 대표 영역은 실제 시세로 자동 생성하는 "전일 시장 요약", 그 아래 "전일 순위" 표 4개(상승률·하락률·거래대금 상위는 전체 시장 `LIVE.ranks`, 거래량 급증은 히트맵 종목 `MARKET.volSurge`). "전일 주목 종목" 카드는 히트맵 종목 중 거래대금 상위 8개(`MARKET.stocks`), 카드 아래 줄은 거래대금·52주 최고 대비. 작은 차트는 실제 최근 종가(`spark`).
 - `js/stock.js` 종목 상세. 일봉은 `data/history/<코드>.js`.
 - `js/heatmap.js` 히트맵 화면. D3 treemap(cdnjs, d3 7.9.0). 칸 크기 시가총액, 색 등락률(1일 ±3%, 1주 ±6%, 1개월 ±12%에서 꽉 참).
 

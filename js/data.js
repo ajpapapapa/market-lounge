@@ -11,17 +11,6 @@ const MARKET = {
     { name: "금", value: 2648.5, change: 0.42 },
   ],
 
-  stocks: [
-    { name: "삼성전자", code: "005930", note: "HBM4 공급 계약 기대" },
-    { name: "SK하이닉스", code: "000660", note: "미국 반도체 급락 영향" },
-    { name: "한화에어로스페이스", code: "012450", note: "폴란드 2차 계약" },
-    { name: "에코프로", code: "086520", note: "리튬 가격 반등" },
-    { name: "현대차", code: "005380", note: "환율 효과, 3분기 실적" },
-    { name: "두산에너빌리티", code: "034020", note: "원전 수주 일정 지연" },
-    { name: "NAVER", code: "035420", note: "실적 발표 D-6" },
-    { name: "셀트리온", code: "068270", note: "미국 신제품 출시" },
-  ],
-
 
   // 단위: 억원
   flows: [

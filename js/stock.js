@@ -265,9 +265,9 @@ function renderRecent() {
 }
 
 function renderRelated() {
-  const mention = MARKET.stocks.find((s) => s.code === stock.code);
-  // 라운지 전일 순위표에 이 종목이 들었으면 몇 위인지 보여 준다
+  // 라운지 전일 순위표·주목 종목에 이 종목이 들었으면 몇 위인지 보여 준다
   const rankLists = [
+    ["전일 주목 종목(거래대금)", MARKET.stocks],
     ["상승률 상위", LIVE.ranks.gainers],
     ["하락률 상위", LIVE.ranks.losers],
     ["거래대금 상위", LIVE.ranks.value],
@@ -281,7 +281,6 @@ function renderRelated() {
       ([title, i]) =>
         `<li><span class="chip">전일 순위</span><a href="index.html" class="r-title">${title} ${i + 1}위</a><span class="r-time">${LIVE.date.replaceAll("-", ".")}</span></li>`
     ),
-    ...(mention ? [`<li><span class="chip">시황 메모</span><span class="r-title">${mention.note}</span><span class="r-time">예시</span></li>`] : []),
   ];
   document.getElementById("related").innerHTML = items.length
     ? items.join("")

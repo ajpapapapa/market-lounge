@@ -113,8 +113,11 @@ function renderRanks() {
     .join("");
 }
 
+// 전일 주목 종목 카드. 아래 한 줄은 실제 숫자로 만든다: 거래대금, 52주 최고 종가 대비
 function renderStocks() {
   const row = document.getElementById("stock-row");
+  const money = (eok) => (eok >= 10000 ? `${fmt(eok / 10000, 1)}조` : `${eok.toLocaleString("ko-KR")}억`);
+  const fromHigh = (s) => (s.price / s.high52 - 1) * 100;
   row.innerHTML = MARKET.stocks
     .map(
       (s) => `<a href="${stockUrl(s.code)}" class="stock-card">
@@ -125,7 +128,7 @@ function renderStocks() {
         <p class="s-price">${s.price.toLocaleString("ko-KR")}<small>원</small></p>
         <p class="${dir(s.change)}">${sign(s.change)}${fmt(s.change)}% ${arrow(s.change)}</p>
         ${sparkline(s.spark.slice(-40), 220, 48, dir(s.change))}
-        <p class="s-note">${s.note}</p>
+        <p class="s-note">거래대금 ${money(s.value)} · 52주 최고 대비 <span class="${dir(fromHigh(s))}">${sign(fromHigh(s))}${fmt(fromHigh(s), 1)}%</span></p>
       </a>`
     )
     .join("");
