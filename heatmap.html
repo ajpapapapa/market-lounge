@@ -81,7 +81,10 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
     <script src="js/data.js"></script>
-    <script src="data/prices.js"></script>
+    <!-- 시세 파일은 10분마다 주소가 바뀌게 해서 브라우저가 예전 시세를 쓰지 않게 한다 -->
+    <script>
+      document.write('<script src="data/prices.js?t=' + Math.floor(Date.now() / 600000) + '"><\/script>');
+    </script>
     <script src="js/live.js"></script>
     <script src="js/common.js"></script>
     <script src="js/heatmap.js"></script>

@@ -72,7 +72,7 @@ document.querySelectorAll(".data-note").forEach((el) => {
 function loadLiveHistory(code) {
   return new Promise((resolve) => {
     const script = document.createElement("script");
-    script.src = `data/history/${code}.js`;
+    script.src = `data/history/${code}.js?t=${Math.floor(Date.now() / 600000)}`;
     script.onload = () => resolve((window.LIVE_HISTORY || {})[code] || null);
     script.onerror = () => resolve(null);
     document.head.appendChild(script);

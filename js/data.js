@@ -11,12 +11,6 @@ const MARKET = {
     { name: "금", value: 2648.5, change: 0.42 },
   ],
 
-  hero: {
-    tag: "장전 브리핑",
-    title: "외국인 3거래일 연속 순매도, 반도체 대형주 약세 속 방산·조선만 버텼다",
-    minutesAgo: 37,
-  },
-
   articles: [
     { title: "[장전 브리핑] 미국 기술주 급락 여파, 오늘 코스피 출발은 어디서", tag: "브리핑", time: "3시간 전", stock: "SK하이닉스" },
     { title: "HBM4 공급 계약 발표 임박? 증권가가 보는 시점과 규모", tag: "분석", time: "13시간 전", stock: "삼성전자" },

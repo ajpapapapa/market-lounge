@@ -27,15 +27,41 @@ function renderTicker() {
     .join("");
 }
 
+// 대표 영역: 실제 시세로 만드는 전일 시장 요약 (KOSPI 히트맵 종목 기준)
 function renderHero() {
-  const h = MARKET.hero;
-  // 배경 차트: KOSPI 종목 시가총액 합계의 최근 흐름
-  document.getElementById("hero").innerHTML = `
-    ${sparkline(MARKET.capTrend, 800, 260, "hero-chart")}
+  const pct = (n) => `${sign(n)}${fmt(n)}%`;
+  const sectors = HEATMAP.markets.kospi.sectors
+    .map((sec) => {
+      const total = sec.stocks.reduce((sum, s) => sum + s.cap, 0);
+      return { name: sec.name, change: sec.stocks.reduce((sum, s) => sum + s.cap * s.change[0], 0) / total };
+    })
+    .sort((a, b) => b.change - a.change);
+  const stocks = HEATMAP.markets.kospi.sectors.flatMap((sec) => sec.stocks);
+  const up = stocks.filter((s) => s.change[0] > 0).length;
+  const down = stocks.filter((s) => s.change[0] < 0).length;
+  const trend = MARKET.capTrend;
+  const capChange = (trend[trend.length - 1] / trend[trend.length - 2] - 1) * 100;
+
+  // 오른 종목이 많으면 강한 업종 두 개, 내린 종목이 많으면 약한 업종 두 개를 제목에 쓴다
+  const [a, b] = up >= down ? sectors : [...sectors].reverse();
+  const title =
+    up >= down
+      ? `${a.name}·${b.name} 강세, 시가총액 상위 ${stocks.length}종목 중 ${up}종목 상승`
+      : `${a.name}·${b.name} 약세, 시가총액 상위 ${stocks.length}종목 중 ${down}종목 하락`;
+
+  const hero = document.getElementById("hero");
+  hero.href = "heatmap.html";
+  hero.innerHTML = `
+    ${sparkline(trend, 800, 260, "hero-chart")}
     <div class="hero-text">
-      <span class="hero-tag">${h.tag}</span>
-      <h1>${h.title}</h1>
-      <span class="hero-time">${h.minutesAgo}분 전</span>
+      <span class="hero-tag">전일 시장 요약</span>
+      <h1>${title}</h1>
+      <p class="hero-sub">
+        시가총액 합계 <b class="${dir(capChange)}">${pct(capChange)}</b>
+        · ${a.name} <b class="${dir(a.change)}">${pct(a.change)}</b>
+        · ${b.name} <b class="${dir(b.change)}">${pct(b.change)}</b>
+      </p>
+      <span class="hero-time">${PRICE_NOTE} · 자동 생성</span>
     </div>`;
 }
 
@@ -109,11 +135,15 @@ function renderFlows() {
     <tbody>${MARKET.flows.map((f) => `<tr><th>${f.who}</th>${cell(f.today)}${cell(f.week)}</tr>`).join("")}</tbody>`;
 }
 
+// 한 구역에서 오류가 나도 나머지 구역은 그린다
+function safely(render) {
+  try {
+    render();
+  } catch (e) {
+    console.error(`${render.name} 실패`, e);
+  }
+}
+
 if (LIVE_ON) {
-  renderTicker();
-  renderHero();
-  renderArticles();
-  renderStocks();
-  renderSectors();
-  renderFlows();
+  [renderTicker, renderHero, renderArticles, renderStocks, renderSectors, renderFlows].forEach(safely);
 }
