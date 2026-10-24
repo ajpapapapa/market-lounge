@@ -24,6 +24,7 @@ const SPARK_DAYS = 60; // 라운지 작은 차트용 최근 종가 개수
 const RANK_SIZE = 5; // 라운지 순위표 종목 수
 const MIN_VALUE = 1e9; // 순위표에 넣을 최소 거래대금(10억원). 거래가 거의 없는 종목이 순위를 차지하지 않게
 const STALE_DAYS = 30; // 이만큼 거래일 동안 시세가 없으면(상장폐지 등) 일봉 파일을 지운다
+const TIMEOUT_MS = 60000; // 요청 하나당 최대 대기 시간
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const ymd = (d) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}${String(d.getDate()).padStart(2, "0")}`;
@@ -55,7 +56,7 @@ async function call(key, params) {
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
       const text = await res.text();
       let json;
       try {
@@ -72,7 +73,10 @@ async function call(key, params) {
       const item = body.items?.item ?? [];
       return { rows: Array.isArray(item) ? item : [item], total: body.totalCount };
     } catch (e) {
-      lastError = e;
+      // fetch는 네트워크 오류를 "fetch failed"로만 알려 주고 진짜 원인은 cause에 넣는다
+      const cause = e.cause ? ` (${e.cause.code || e.cause.message})` : "";
+      lastError = new Error(`${e.message}${cause}`);
+      console.log(`  ${params.basDt || ""} ${attempt}번째 시도 실패: ${lastError.message}`);
       // 인증키 문제는 다시 해도 안 되므로 바로 멈춘다
       if (e.message.startsWith("접근 거부")) break;
       await sleep(1500 * attempt);
@@ -274,5 +278,7 @@ async function main() {
 
 main().catch((e) => {
   console.error(`실패: ${e.message}`);
+  // GitHub Actions에서는 실패 화면의 Annotations에도 보이게 한다
+  if (process.env.GITHUB_ACTIONS) console.log(`::error title=시세 받기 실패::${e.message}`);
   process.exit(1);
 });
